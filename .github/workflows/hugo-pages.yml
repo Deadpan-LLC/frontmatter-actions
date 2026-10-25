@@ -1,0 +1,100 @@
+name: Frontmatter Hugo Pages
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: Repository-relative path to the build configuration
+        type: string
+        default: .frontmatter/build.json
+      publication-branch:
+        description: The only branch allowed to deploy
+        type: string
+        default: main
+      deploy:
+        description: Explicitly request deployment; PR events can never deploy
+        type: boolean
+        default: false
+    outputs:
+      page-url:
+        description: URL returned by a successful GitHub Pages deployment
+        value: ${{ jobs.deploy.outputs.page-url }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Hugo site
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out site and themes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: site
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out the pinned Frontmatter implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: frontmatter-tools
+          persist-credentials: false
+      - name: Build and write report
+        env:
+          CONFIG_PATH: ${{ inputs.config-path }}
+          FRONTMATTER_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FRONTMATTER_IMPLEMENTATION_SHA: ${{ job.workflow_sha }}
+        run: |
+          python3 "$GITHUB_WORKSPACE/frontmatter-tools/scripts/frontmatter.py" build \
+            --workspace "$GITHUB_WORKSPACE/site" \
+            --config "$CONFIG_PATH" \
+            --output "$RUNNER_TEMP/frontmatter/public" \
+            --tools "$RUNNER_TEMP/frontmatter/tools" \
+            --report "$RUNNER_TEMP/frontmatter/report.json"
+      - name: Upload build report and log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontmatter-build-report
+          path: |
+            ${{ runner.temp }}/frontmatter/report.json
+            ${{ runner.temp }}/frontmatter/report.log
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload validated site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/frontmatter/public
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: >-
+      inputs.deploy &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == format('refs/heads/{0}', inputs.publication-branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: frontmatter-pages-${{ github.repository }}
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page-url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the built artifact
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Frontmatter Hugo build report, version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "phase", "source", "hugo", "startedAt", "finishedAt", "warnings", "error"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "status": {"enum": ["succeeded", "failed"]},
+    "phase": {"enum": ["configuration", "installation", "build", "output", "complete"]},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commitSHA", "headSHA", "ref", "implementationSHA"],
+      "properties": {
+        "repository": {"type": "string"},
+        "commitSHA": {"type": "string"},
+        "headSHA": {"type": "string"},
+        "ref": {"type": "string"},
+        "implementationSHA": {"type": "string"}
+      }
+    },
+    "hugo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestedVersion", "edition", "actualVersion"],
+      "properties": {
+        "requestedVersion": {"type": ["string", "null"]},
+        "edition": {"type": ["string", "null"]},
+        "actualVersion": {"type": ["string", "null"]}
+      }
+    },
+    "startedAt": {"type": "string", "format": "date-time"},
+    "finishedAt": {"type": "string", "format": "date-time"},
+    "warnings": {"type": "array", "maxItems": 100, "items": {"type": "string"}},
+    "error": {"type": ["string", "null"]}
+  }
+}

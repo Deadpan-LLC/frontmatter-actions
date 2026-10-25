@@ -1,0 +1,7 @@
+baseURL = 'https://wrong-base-url.invalid/'
+title = 'Frontmatter integration fixture'
+languageCode = 'en-us'
+theme = 'hugo-bearblog'
+
+[params]
+  description = 'A real theme, Markdown, shortcodes, and local resources.'

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "hugo": {"version": "0.147.2", "edition": "extended"},
+  "baseURL": "https://example.com/",
+  "siteDirectory": ".",
+  "timeZone": "UTC",
+  "build": {"minify": true, "garbageCollect": true}
+}

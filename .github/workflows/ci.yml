@@ -1,0 +1,108 @@
+name: Validate Frontmatter Actions
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Contracts and workflow lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Install and run pinned actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+        run: |
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          release="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}"
+          curl --fail --location --silent --show-error "$release/$archive" --output "$RUNNER_TEMP/$archive"
+          curl --fail --location --silent --show-error "$release/actionlint_${ACTIONLINT_VERSION}_checksums.txt" --output "$RUNNER_TEMP/checksums.txt"
+          cd "$RUNNER_TEMP"
+          awk -v name="$archive" '$2 == name { print }' checksums.txt | sha256sum --check --strict
+          tar -xzf "$archive" actionlint
+          cd "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/actionlint" -color
+
+  fixture:
+    name: Hugo ${{ matrix.version }} (${{ matrix.edition }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 0.147.2
+            edition: extended
+          - version: 0.168.0
+            edition: extended
+          - version: 0.168.0
+            edition: standard
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Select fixture release
+        env:
+          HUGO_VERSION: ${{ matrix.version }}
+          HUGO_EDITION: ${{ matrix.edition }}
+        run: |
+          mkdir -p .test-results
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          config = json.loads(Path('tests/fixtures/reusable.json').read_text())
+          config['hugo'] = {'version': os.environ['HUGO_VERSION'], 'edition': os.environ['HUGO_EDITION']}
+          Path('.test-results/build.json').write_text(json.dumps(config))
+          PY
+      - name: Build real theme and fixture
+        env:
+          FRONTMATTER_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FRONTMATTER_IMPLEMENTATION_SHA: ${{ github.sha }}
+        run: |
+          python3 scripts/frontmatter.py build \
+            --workspace "$GITHUB_WORKSPACE" \
+            --config .test-results/build.json \
+            --output "$RUNNER_TEMP/site/public" \
+            --tools "$RUNNER_TEMP/site/tools" \
+            --report "$RUNNER_TEMP/site/report.json"
+      - name: Verify generated content and report
+        env:
+          HUGO_VERSION: ${{ matrix.version }}
+          HUGO_EDITION: ${{ matrix.edition }}
+        run: |
+          python3 tests/verify_fixture.py \
+            --output "$RUNNER_TEMP/site/public" \
+            --report "$RUNNER_TEMP/site/report.json" \
+            --version "$HUGO_VERSION" --edition "$HUGO_EDITION"
+      - name: Upload fixture evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fixture-${{ matrix.version }}-${{ matrix.edition }}
+          path: |
+            ${{ runner.temp }}/site/report.json
+            ${{ runner.temp }}/site/report.log
+            ${{ runner.temp }}/site/public
+          retention-days: 7
+
+  reusable:
+    name: Reusable workflow integration
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/hugo-pages.yml
+    with:
+      config-path: tests/fixtures/reusable.json
+      # Even if a caller requests deployment on a PR, the shared workflow must refuse.
+      deploy: ${{ github.event_name == 'pull_request' }}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Deadpan-LLC/frontmatter-actions/blob/main/schema/build.schema.json",
+  "title": "Frontmatter Hugo build configuration, version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "hugo", "baseURL"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "hugo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "edition"],
+      "properties": {
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "edition": {"enum": ["standard", "extended"]}
+      }
+    },
+    "baseURL": {"type": "string", "format": "uri", "pattern": "^https?://"},
+    "siteDirectory": {"type": "string", "minLength": 1, "default": "."},
+    "timeZone": {"type": "string", "minLength": 1, "default": "UTC"},
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minify": {"type": "boolean", "default": true},
+        "garbageCollect": {"type": "boolean", "default": true}
+      }
+    }
+  }
+}

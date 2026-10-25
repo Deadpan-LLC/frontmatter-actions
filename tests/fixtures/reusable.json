@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "hugo": {"version": "0.147.2", "edition": "extended"},
+  "baseURL": "https://example.invalid/frontmatter/",
+  "siteDirectory": "tests/fixtures/site",
+  "timeZone": "America/New_York"
+}
