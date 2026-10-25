@@ -65,7 +65,7 @@ def load_config(workspace, relative):
     hugo = config["hugo"]
     object_fields(hugo, {"version", "edition"}, {"version", "edition"}, "hugo")
     if not isinstance(hugo["version"], str) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", hugo["version"]):
-        raise BuildError("hugo.version must pin a stable release such as 0.147.2; latest and ranges are unsupported.")
+        raise BuildError("hugo.version must pin a stable release such as 0.168.0; latest and ranges are unsupported.")
     if hugo["edition"] not in ("standard", "extended"):
         raise BuildError("hugo.edition must be standard or extended.")
     url = config["baseURL"]

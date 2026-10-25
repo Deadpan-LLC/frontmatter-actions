@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "hugo": {"version": "0.147.2", "edition": "extended"},
+  "hugo": {"version": "0.168.0", "edition": "extended"},
   "baseURL": "https://example.com/",
   "siteDirectory": ".",
   "timeZone": "UTC",

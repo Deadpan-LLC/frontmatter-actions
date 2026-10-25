@@ -17,6 +17,7 @@ identity properties to fetch its own implementation at the caller's pinned commi
 
 1. Create `.frontmatter/build.json` using [the example](examples/build.json).
    Set the exact Hugo release, standard/extended edition, and public base URL.
+   The example starts with Hugo 0.168.0; older versions remain covered by regression tests.
    Include the repository prefix for project sites, or your existing custom domain.
 2. Copy [the caller workflow](examples/frontmatter.yml) into
    `.github/workflows/frontmatter.yml`. Replace `PINNED_RELEASE_COMMIT` with a
@@ -52,7 +53,7 @@ unpinned versions, invalid URLs/time zones, and paths outside the checkout.
 | Setting | Behavior |
 | --- | --- |
 | `schemaVersion` | Required; currently `1`. |
-| `hugo.version` | Required; stable exact release such as `0.147.2`. |
+| `hugo.version` | Required; stable exact release such as `0.168.0`. |
 | `hugo.edition` | Required; `standard` or `extended`. |
 | `baseURL` | Required; absolute HTTP(S) site URL, including any project prefix. Overrides the site's configured base URL for this build. |
 | `siteDirectory` | Defaults to `.`; may point to a nested Hugo site inside the repository. |
