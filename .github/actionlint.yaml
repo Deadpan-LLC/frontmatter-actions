@@ -1,0 +1,7 @@
+# actionlint 1.7.12 predates these GitHub.com job-context properties.
+# https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#job-context
+# Remove this exception once actionlint's context types include them.
+paths:
+  .github/workflows/hugo-pages.yml:
+    ignore:
+      - 'property "(workflow_repository|workflow_sha)" is not defined in object type'

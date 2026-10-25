@@ -1,0 +1,28 @@
+name: Build and deploy with Frontmatter
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the selected publication-branch revision
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  site:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # Replace PINNED_RELEASE_COMMIT with a reviewed 40-character release commit.
+    uses: Deadpan-LLC/frontmatter-actions/.github/workflows/hugo-pages.yml@PINNED_RELEASE_COMMIT
+    with:
+      publication-branch: main
+      deploy: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy) }}
