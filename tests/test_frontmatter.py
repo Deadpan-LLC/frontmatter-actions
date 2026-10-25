@@ -159,7 +159,7 @@ class BuildTests(WorkspaceTest):
             self.command, self.environment = command, environment
             Path(self.args.output, "index.html").write_text("<h1>Site</h1>")
             log.write_text("WARN example\n")
-            return result, ["WARN example"]
+            return result, ["WARN example"], ["ERROR template function is unavailable"] if result else []
         with mock.patch.object(fm, "run_build", side_effect=run), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             status = fm.build(self.args)
         return status, json.loads(Path(self.args.report).read_text())
@@ -183,6 +183,7 @@ class BuildTests(WorkspaceTest):
         self.assertEqual(report["phase"], "build")
         self.assertEqual(report["status"], "failed")
         self.assertEqual(report["warnings"], ["WARN example"])
+        self.assertIn("template function is unavailable", report["error"])
         self.assertTrue(Path(self.args.report).with_suffix(".log").exists())
 
     def test_invalid_configuration_still_produces_failure_report(self):

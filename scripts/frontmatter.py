@@ -173,6 +173,7 @@ def build_command(binary, config, site, output, cache):
 
 def run_build(command, site, log, environment):
     warnings = []
+    diagnostics = []
     with log.open("w") as output:
         process = subprocess.Popen(command, cwd=site, env=environment, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, text=True, errors="replace")
@@ -182,8 +183,10 @@ def run_build(command, site, log, environment):
             print("[hugo] " + line.rstrip("\n").replace("\r", "\\r"), flush=True)
             if re.match(r"\s*WARN\b", line) and len(warnings) < 100:
                 warnings.append(line.strip()[:2000])
+            if re.match(r"\s*(ERROR\b|Error:)", line) and len(diagnostics) < 3:
+                diagnostics.append(line.strip()[:1000])
         result = process.wait()
-    return result, warnings
+    return result, warnings, diagnostics
 
 
 def validate_output(output):
@@ -245,9 +248,10 @@ def build(args):
         report["phase"] = "build"
         environment = dict(os.environ, TZ=config["timeZone"], HUGO_ENVIRONMENT="production")
         command = build_command(binary, config, site, output, tools / "hugo-cache")
-        result, report["warnings"] = run_build(command, site, report_path.with_suffix(".log"), environment)
+        result, report["warnings"], diagnostics = run_build(command, site, report_path.with_suffix(".log"), environment)
         if result:
-            raise BuildError(f"Hugo exited with status {result}. See the build log for details.")
+            detail = " ".join(diagnostics) or "See the build log for details."
+            raise BuildError(f"Hugo exited with status {result}. {detail}")
         report["phase"] = "output"
         validate_output(output)
         report.update(status="succeeded", phase="complete")
